@@ -10,64 +10,7 @@ A social platform built for teens. This repository contains the backend services
 
 The diagram below shows how the major components of Connector communicate with each other.
 
-```mermaid
-graph TD
-    USER["User (Browser / Mobile App)"]
-
-    subgraph FRONTEND["Frontend"]
-        FE_PROFILE["Profile Page"]
-        FE_ERRORS["Error Handler"]
-    end
-
-    subgraph AUTH["Authentication Service"]
-        AUTH_LOGIN["Login Endpoint"]
-        AUTH_SESSION["Session Manager"]
-    end
-
-    subgraph API["Backend API"]
-        API_MESSAGES["Direct Messages"]
-        API_UPLOAD["File Upload"]
-        API_SEARCH["Search"]
-    end
-
-    subgraph DB["Database"]
-        DB_QUERIES["Query Engine"]
-        DB_USERS["User Records"]
-    end
-
-    subgraph PAYMENTS["Payment Processor"]
-        PAY_PROCESS["Transaction Handler"]
-    end
-
-    subgraph ADMIN["Admin Panel"]
-        ADMIN_LOGIN["Admin Login"]
-        ADMIN_DEPS["Dependencies"]
-    end
-
-    USER -->|"HTTP requests"| FRONTEND
-    USER -->|"Login / Signup"| AUTH_LOGIN
-    AUTH_LOGIN -->|"Create / validate token"| AUTH_SESSION
-    AUTH_SESSION -->|"Token check on every request"| API
-
-    FRONTEND -->|"REST API calls"| API
-    API_MESSAGES -->|"Read / write messages"| DB_QUERIES
-    API_UPLOAD -->|"Store file metadata"| DB_QUERIES
-    API_SEARCH -->|"Query users & posts"| DB_QUERIES
-    DB_QUERIES -->|"Read / write"| DB_USERS
-
-    API -->|"Process payments"| PAY_PROCESS
-    PAY_PROCESS -->|"Store transaction records"| DB_QUERIES
-
-    ADMIN_LOGIN -->|"Staff-only access"| API
-    ADMIN_DEPS -.->|"Logging library v1.2"| API
-
-    style AUTH fill:#ff6b6b,stroke:#c0392b,color:#fff
-    style API fill:#f39c12,stroke:#e67e22,color:#fff
-    style FRONTEND fill:#3498db,stroke:#2980b9,color:#fff
-    style DB fill:#2ecc71,stroke:#27ae60,color:#fff
-    style PAYMENTS fill:#9b59b6,stroke:#8e44ad,color:#fff
-    style ADMIN fill:#95a5a6,stroke:#7f8c8d,color:#fff
-```
+![Connector Architecture Diagram](docs/architecture.png)
 
 ### How It Works
 
