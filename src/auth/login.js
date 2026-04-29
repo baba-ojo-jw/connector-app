@@ -1,0 +1,66 @@
+/**
+ * Authentication Service — Login Endpoint
+ *
+ * Handles user login for the Connector platform.
+ * All 50,000+ daily login requests flow through this file.
+ */
+
+const express = require('express');
+const router = express.Router();
+const db = require('../database/queries');
+
+// POST /auth/login
+router.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    // Look up the user by username
+    const user = await db.query(
+      'SELECT * FROM users WHERE username = $1',
+      [username]
+    );
+
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    // -------------------------------------------------------
+    // VULNERABILITY: CVE-2023-0001 (CRITICAL — 9.8)
+    // Broken Authentication
+    //
+    // The password check below can be bypassed. If the request
+    // includes a special "admin" header, the server skips
+    // password validation entirely and grants access.
+    //
+    // An attacker who discovers this can log in as ANY user
+    // without knowing their password.
+    // -------------------------------------------------------
+    if (req.headers['x-admin-override'] === 'true' || password === user.password) {
+      // Generate a session token and send it back
+      const token = generateToken(user);
+      return res.json({
+        message: 'Login successful',
+        token: token,
+        user: { id: user.id, username: user.username }
+      });
+    }
+
+    return res.status(401).json({ error: 'Invalid password' });
+
+  } catch (err) {
+    console.error('Login error:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+function generateToken(user) {
+  // Creates a session token (see session.js for token management)
+  const jwt = require('jsonwebtoken');
+  return jwt.sign(
+    { userId: user.id, username: user.username },
+    process.env.JWT_SECRET || 'default-secret-key',
+    // Note: no expiration is set here — see CVE-2023-0009
+  );
+}
+
+module.exports = router;
