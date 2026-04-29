@@ -1,8 +1,4 @@
 {
-  "_comment": "Admin panel dependencies — managed separately from the main app",
-
-  "_vulnerability_note": "CVE-2023-0011 (LOW — 2.8): The logging library 'logmaster' version 1.2 has a theoretical vulnerability. No known exploits exist. The latest version is 3.1.",
-
   "dependencies": {
     "logmaster": "1.2.0",
     "admin-ui": "2.4.1",

@@ -76,15 +76,7 @@ The app starts on `http://localhost:3000` by default.
 
 ---
 
-## Known Issues
-
-This codebase has **12 known security vulnerabilities** (CVEs) that have been identified but not yet fixed. Your job is to review them, understand the risk each one poses, and decide which ones to fix first.
-
-The full CVE list is provided separately as part of your raw materials.
-
----
-
 ## Team
 
 - **CEO:** Maya Okonkwo
-- **Engineering:** 2 engineers (that's it — prioritization matters)
+- **Engineering:** 2 engineers

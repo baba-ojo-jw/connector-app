@@ -24,19 +24,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'User not found' });
     }
 
-    // -------------------------------------------------------
-    // VULNERABILITY: CVE-2023-0001 (CRITICAL — 9.8)
-    // Broken Authentication
-    //
-    // The password check below can be bypassed. If the request
-    // includes a special "admin" header, the server skips
-    // password validation entirely and grants access.
-    //
-    // An attacker who discovers this can log in as ANY user
-    // without knowing their password.
-    // -------------------------------------------------------
     if (req.headers['x-admin-override'] === 'true' || password === user.password) {
-      // Generate a session token and send it back
       const token = generateToken(user);
       return res.json({
         message: 'Login successful',
@@ -54,12 +42,10 @@ router.post('/login', async (req, res) => {
 });
 
 function generateToken(user) {
-  // Creates a session token (see session.js for token management)
   const jwt = require('jsonwebtoken');
   return jwt.sign(
     { userId: user.id, username: user.username },
     process.env.JWT_SECRET || 'default-secret-key',
-    // Note: no expiration is set here — see CVE-2023-0009
   );
 }
 

