@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Connector — Traffic Analysis Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    header {
+      margin-bottom: 2rem;
+      border-bottom: 1px solid #2d3748;
+      padding-bottom: 1.25rem;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #f7fafc;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      margin-top: 0.35rem;
+      font-size: 0.875rem;
+      color: #718096;
+    }
+
+    .alert-banner {
+      background: #2d1b1b;
+      border: 1px solid #e53e3e;
+      border-radius: 8px;
+      padding: 0.85rem 1.1rem;
+      font-size: 0.875rem;
+      color: #fc8181;
+      margin-bottom: 2rem;
+      line-height: 1.5;
+    }
+
+    .alert-banner strong { color: #feb2b2; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: #1a202c;
+      border: 1px solid #2d3748;
+      border-radius: 10px;
+      padding: 1.1rem 1.25rem;
+    }
+
+    .stat-card .label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #718096;
+      margin-bottom: 0.4rem;
+    }
+
+    .stat-card .value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #f7fafc;
+      letter-spacing: -0.03em;
+    }
+
+    .stat-card .sub {
+      font-size: 0.75rem;
+      color: #4a5568;
+      margin-top: 0.25rem;
+    }
+
+    .stat-card.highlight { border-color: #e53e3e; }
+    .stat-card.highlight .value { color: #fc8181; }
+
+    .charts {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (max-width: 800px) {
+      .charts { grid-template-columns: 1fr; }
+    }
+
+    .chart-card {
+      background: #1a202c;
+      border: 1px solid #2d3748;
+      border-radius: 10px;
+      padding: 1.25rem;
+    }
+
+    .chart-card h2 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #718096;
+      margin-bottom: 1.25rem;
+    }
+
+    .chart-wrap {
+      position: relative;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    thead th {
+      text-align: left;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #4a5568;
+      padding: 0 0.75rem 0.75rem;
+      border-bottom: 1px solid #2d3748;
+    }
+
+    tbody tr:hover td { background: #1e2533; }
+
+    tbody td {
+      padding: 0.65rem 0.75rem;
+      border-bottom: 1px solid #1a202c;
+      color: #e2e8f0;
+      vertical-align: middle;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-internet  { background: #2d1b1b; color: #fc8181; }
+    .badge-internal  { background: #1a2d1a; color: #68d391; }
+    .badge-offline   { background: #1a1a2d; color: #76e4f7; }
+
+    .bar-cell { width: 140px; }
+    .bar-bg {
+      background: #2d3748;
+      border-radius: 3px;
+      height: 6px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 6px;
+      border-radius: 3px;
+      background: #4299e1;
+      transition: width 0.4s ease;
+    }
+    .bar-fill.high   { background: #fc8181; }
+    .bar-fill.medium { background: #f6ad55; }
+    .bar-fill.low    { background: #68d391; }
+
+    .context-box {
+      background: #1a202c;
+      border: 1px solid #2d3748;
+      border-left: 3px solid #4299e1;
+      border-radius: 10px;
+      padding: 1.1rem 1.35rem;
+      font-size: 0.85rem;
+      line-height: 1.65;
+      color: #a0aec0;
+    }
+
+    .context-box strong { color: #e2e8f0; }
+
+    footer {
+      margin-top: 2rem;
+      font-size: 0.75rem;
+      color: #4a5568;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Connector — Traffic Analysis Dashboard</h1>
+    <p>Week of March 1–7, 2026 &nbsp;·&nbsp; Use alongside the CVE list to assess exposure by component</p>
+  </header>
+
+  <div class="alert-banner">
+    <strong>Viral spike detected.</strong> A TikTok feature drove a <strong>10x</strong> traffic increase this week.
+    Login attempts rose <strong>8x</strong> from the prior week. The direct message endpoint is now among the busiest
+    in the system and was not previously flagged as high-priority.
+  </div>
+
+  <!-- KPI cards -->
+  <div class="grid">
+    <div class="stat-card highlight">
+      <div class="label">Auth Service — Login</div>
+      <div class="value">50,000</div>
+      <div class="sub">req/day · Highest in system</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Backend API — Total</div>
+      <div class="value">200,000</div>
+      <div class="sub">req/day · All endpoints</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Frontend — Profiles</div>
+      <div class="value">35,000</div>
+      <div class="sub">req/day · Surged after viral post</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Backend API — Messages</div>
+      <div class="value">28,000</div>
+      <div class="sub">req/day · Growing fast</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Backend API — Search</div>
+      <div class="value">18,000</div>
+      <div class="sub">req/day</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Backend API — Uploads</div>
+      <div class="value">6,500</div>
+      <div class="sub">req/day · Profile photos</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Admin Panel</div>
+      <div class="value">12</div>
+      <div class="sub">req/day · Internal only</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Payment Processor</div>
+      <div class="value">0</div>
+      <div class="sub">req/day · Not yet live</div>
+    </div>
+  </div>
+
+  <!-- Charts row -->
+  <div class="charts">
+    <div class="chart-card">
+      <h2>Daily Requests by Endpoint (log scale)</h2>
+      <div class="chart-wrap" style="height:280px;">
+        <canvas id="barChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h2>Share of Backend API Traffic</h2>
+      <div class="chart-wrap" style="height:280px;">
+        <canvas id="doughnutChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail table -->
+  <div class="chart-card" style="margin-bottom:1.5rem;">
+    <h2>Component Detail</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Component</th>
+          <th>Endpoint</th>
+          <th>Avg Daily Req</th>
+          <th>Exposure</th>
+          <th>Volume</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Authentication Service</td>
+          <td>Login</td>
+          <td>50,000</td>
+          <td><span class="badge badge-internet">Internet-facing</span></td>
+          <td class="bar-cell">
+            <div class="bar-bg"><div class="bar-fill high" style="width:100%"></div></div>
+          </td>
+          <td>Highest in system. All user logins go through here.</td>
+        </tr>
+        <tr>
+          <td>Backend API</td>
+          <td>Messages</td>
+          <td>28,000</td>
+          <td><span class="badge badge-internet">Internet-facing</span></td>
+          <td class="bar-cell">
+            <div class="bar-bg"><div class="bar-fill high" style="width:56%"></div></div>
+          </td>
+          <td>Growing fast; teen users are active.</td>
+        </tr>
+        <tr>
+          <td>Frontend</td>
+          <td>Profile pages</td>
+          <td>35,000</td>
+          <td><span class="badge badge-internet">Internet-facing</span></td>
+          <td class="bar-cell">
+            <div class="bar-bg"><div class="bar-fill high" style="width:70%"></div></div>
+          </td>
+          <td>Surged after viral post.</td>
+        </tr>
+        <tr>
+          <td>Backend API</td>
+          <td>Search</td>
+          <td>18,000</td>
+          <td><span class="badge badge-internet">Internet-facing</span></td>
+          <td class="bar-cell">
+            <div class="bar-bg"><div class="bar-fill medium" style="width:36%"></div></div>
+          </td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>Backend API</td>
+          <td>File uploads</td>
+          <td>6,500</td>
+          <td><span class="badge badge-internet">Internet-facing</span></td>
+          <td class="bar-cell">
+            <div class="bar-bg"><div class="bar-fill low" style="width:13%"></div></div>
+          </td>
+          <td>Used for profile photos.</td>
+        </tr>
+        <tr>
+          <td>Admin Panel</td>
+          <td>All</td>
+          <td>12</td>
+          <td><span class="badge badge-internal">Internal only</span></td>
+          <td class="bar-cell">
+            <div class="bar-bg"><div class="bar-fill low" style="width:1%"></div></div>
+          </td>
+          <td>Internal staff only.</td>
+        </tr>
+        <tr>
+          <td>Payment Processor</td>
+          <td>—</td>
+          <td>0</td>
+          <td><span class="badge badge-offline">Not live</span></td>
+          <td class="bar-cell">
+            <div class="bar-bg"><div class="bar-fill low" style="width:0%"></div></div>
+          </td>
+          <td>Testing only. No production traffic.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Context note -->
+  <div class="context-box">
+    <strong>How to use this data with the CVE list:</strong> A vulnerability in a high-traffic, internet-facing
+    component puts more users at risk than the same vulnerability in a low-traffic or internal component. The auth
+    service at 50,000 req/day and the profile page at 35,000 req/day are both internet-facing and saw the largest
+    absolute spikes this week. The direct message endpoint at 28,000 req/day is now a high-traffic surface that
+    was not previously treated as a priority. The admin panel and payment processor carry very different risk profiles
+    despite having zero or near-zero traffic — the admin panel controls the entire platform, and the payment processor
+    is weeks away from going live with real card data.
+  </div>
+
+  <footer>Connector internal use only &nbsp;·&nbsp; Week of March 1–7, 2026</footer>
+
+  <script>
+    // Bar chart — log scale, internet-facing highlighted
+    const barCtx = document.getElementById('barChart').getContext('2d');
+
+    const labels = [
+      'Auth — Login',
+      'Frontend — Profiles',
+      'API — Messages',
+      'API — Search',
+      'API — Uploads',
+      'Admin Panel',
+    ];
+
+    const values = [50000, 35000, 28000, 18000, 6500, 12];
+
+    const colors = [
+      '#fc8181', // auth — highest, red
+      '#f6ad55', // profiles — medium, orange
+      '#fc8181', // messages — growing fast
+      '#f6ad55', // search
+      '#68d391', // uploads — lower
+      '#76e4f7', // admin — internal
+    ];
+
+    new Chart(barCtx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Avg Daily Requests',
+          data: values,
+          backgroundColor: colors,
+          borderRadius: 4,
+          borderSkipped: false,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            ticks: { color: '#718096', font: { size: 11 } },
+            grid: { display: false },
+            border: { color: '#2d3748' },
+          },
+          y: {
+            type: 'logarithmic',
+            min: 1,
+            ticks: {
+              color: '#718096',
+              font: { size: 11 },
+              callback: v => v >= 1000 ? (v / 1000) + 'k' : v,
+            },
+            grid: { color: '#2d3748' },
+            border: { color: '#2d3748' },
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ' ' + ctx.parsed.y.toLocaleString() + ' req/day'
+            }
+          }
+        }
+      }
+    });
+
+    // Doughnut — share of Backend API traffic
+    const dCtx = document.getElementById('doughnutChart').getContext('2d');
+
+    new Chart(dCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Messages', 'Search', 'Uploads', 'Other'],
+        datasets: [{
+          data: [28000, 18000, 6500, 147500],
+          backgroundColor: ['#fc8181', '#f6ad55', '#68d391', '#4a5568'],
+          borderColor: '#1a202c',
+          borderWidth: 3,
+          hoverOffset: 8,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '65%',
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: '#a0aec0',
+              font: { size: 11 },
+              padding: 14,
+              boxWidth: 12,
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: ctx => ' ' + ctx.parsed.toLocaleString() + ' req/day'
+            }
+          }
+        }
+      }
+    });
+  </script>
+
+</body>
+</html>
