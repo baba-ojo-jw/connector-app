@@ -65,14 +65,11 @@ connector-app/
 
 ---
 
-## Running Locally
+## How to Use This Repo
 
-```bash
-npm install
-npm start
-```
+This is a **read-only codebase for analysis** — it is not a running application. Browse the files in `src/` to understand how each component works and to find security vulnerabilities in the code.
 
-The app starts on `http://localhost:3000` by default.
+Start with the architecture diagram and project structure above, then open individual files and read them. Your job is to find what's wrong, not to fix it.
 
 ---
 
