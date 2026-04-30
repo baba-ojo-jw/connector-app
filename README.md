@@ -78,5 +78,5 @@ The app starts on `http://localhost:3000` by default.
 
 ## Team
 
-- **CEO:** Maya Okonkwo
+- **CEO:** Maya
 - **Engineering:** 2 engineers
